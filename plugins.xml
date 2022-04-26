@@ -1,0 +1,5 @@
+<library path="goto_plugins">
+  <class type="goto_plugins::GotoSpeed" base_class_type="goto_base::GotoBase">
+    <description>Goto done with speed commands.</description>
+  </class>
+</library>
