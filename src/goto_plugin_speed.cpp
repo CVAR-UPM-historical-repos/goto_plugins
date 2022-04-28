@@ -9,6 +9,7 @@ namespace goto_plugins
         rclcpp_action::GoalResponse onAccepted(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override
         {
             desired_position_ = Eigen::Vector3d(goal->target_pose.position.x, goal->target_pose.position.y, goal->target_pose.position.z);
+            desired_speed_ = goal->max_speed;
             ignore_yaw_ = goal->ignore_pose_yaw;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         }
@@ -92,7 +93,7 @@ namespace goto_plugins
         {
             if (std::abs(speed) > desired_speed_)
             {
-                return speed < 0.0 ? -desired_speed_ : desired_speed_;
+                return (speed < 0.0) ? -desired_speed_ : desired_speed_;
             }
             return speed;
         }
