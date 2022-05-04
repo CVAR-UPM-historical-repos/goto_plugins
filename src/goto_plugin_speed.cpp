@@ -51,11 +51,11 @@ namespace goto_plugins
                 Eigen::Vector3d speed_setpoint = (desired_position_ - actual_position_);
                 pose_mutex_.unlock();
 
-                float vyaw = ignore_yaw_ ? 0.0 : -atan2f((double)speed_setpoint.x(), (double)speed_setpoint.y()) + M_PI / 2.0f;
-                motion_handler.sendSpeedCommandWithYawSpeed(getValidSpeed(speed_setpoint.x()),
+                float yaw = ignore_yaw_ ? 0.0 : -atan2f((double)speed_setpoint.x(), (double)speed_setpoint.y()) + M_PI / 2.0f;
+                motion_handler.sendSpeedCommandWithYawAngle(getValidSpeed(speed_setpoint.x()),
                                                             getValidSpeed(speed_setpoint.y()),
                                                             getValidSpeed(speed_setpoint.z()), 
-                                                            getValidSpeed(vyaw));
+                                                            getValidSpeed(yaw));
 
                 feedback->actual_distance_to_goal = actual_distance_to_goal_;
                 feedback->actual_speed = actual_speed_;
