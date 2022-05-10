@@ -2,4 +2,7 @@
   <class type="goto_plugins::GotoSpeed" base_class_type="goto_base::GotoBase">
     <description>Goto done with speed commands.</description>
   </class>
+  <class type="goto_plugins::GotoTraj" base_class_type="goto_base::GotoBase">
+    <description>Goto done with trajectory generator.</description>
+  </class>
 </library>

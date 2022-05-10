@@ -36,7 +36,7 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
 )
 
-add_library(goto_plugins src/goto_plugin_speed.cpp)
+add_library(goto_plugins src/goto_plugin_speed.cpp src/goto_plugin_traj.cpp)
 target_include_directories(goto_plugins PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
