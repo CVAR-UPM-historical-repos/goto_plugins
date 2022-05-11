@@ -36,6 +36,7 @@ namespace goto_plugins
             }
             trajectory_waypoints.max_speed = desired_speed_;
             traj_waypoints_pub_->publish(trajectory_waypoints);
+            distance_measured_ = false;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         }
 
