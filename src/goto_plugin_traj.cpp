@@ -47,6 +47,7 @@ namespace goto_plugins
                 return rclcpp_action::GoalResponse::REJECT;
             }
 
+            distance_measured_ = false;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         }
 

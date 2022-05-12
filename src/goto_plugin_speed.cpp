@@ -14,6 +14,7 @@ namespace goto_plugins
                 desired_speed_ = goal->max_speed;
             }
             ignore_yaw_ = goal->ignore_pose_yaw;
+            distance_measured_ = false;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         }
 
