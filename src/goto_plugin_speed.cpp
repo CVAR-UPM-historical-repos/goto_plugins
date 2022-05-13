@@ -1,5 +1,5 @@
 #include "goto_base.hpp"
-#include "as2_motion_command_handlers/speed_motion.hpp"
+#include "motion_reference_handlers/speed_motion.hpp"
 
 namespace goto_plugins
 {
@@ -9,7 +9,7 @@ namespace goto_plugins
         rclcpp_action::GoalResponse onAccepted(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override
         {
             desired_position_ = Eigen::Vector3d(goal->target_pose.position.x, goal->target_pose.position.y, goal->target_pose.position.z);
-            if (goal->max_speed != 0.0f) 
+            if (goal->max_speed != 0.0f)
             {
                 desired_speed_ = goal->max_speed;
             }
@@ -30,7 +30,7 @@ namespace goto_plugins
             auto feedback = std::make_shared<as2_msgs::action::GoToWaypoint::Feedback>();
             auto result = std::make_shared<as2_msgs::action::GoToWaypoint::Result>();
 
-            static as2::motionCommandsHandlers::SpeedMotion motion_handler(node_ptr_);
+            static as2::motionReferenceHandlers::SpeedMotion motion_handler(node_ptr_);
 
             float desired_yaw = ignore_yaw_ ? getActualYaw() : 0.0;
             RCLCPP_INFO(node_ptr_->get_logger(), "Desired yaw set to %f", desired_yaw);
@@ -55,7 +55,7 @@ namespace goto_plugins
                 float yaw = ignore_yaw_ ? 0.0 : -atan2f((double)speed_setpoint.x(), (double)speed_setpoint.y()) + M_PI / 2.0f;
                 motion_handler.sendSpeedCommandWithYawAngle(getValidSpeed(speed_setpoint.x()),
                                                             getValidSpeed(speed_setpoint.y()),
-                                                            getValidSpeed(speed_setpoint.z()), 
+                                                            getValidSpeed(speed_setpoint.z()),
                                                             getValidSpeed(yaw));
 
                 feedback->actual_distance_to_goal = actual_distance_to_goal_;
