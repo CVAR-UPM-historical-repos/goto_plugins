@@ -1,14 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
-project(goto_plugins)
+set(PROJECT_NAME "goto_plugins")
+project(${PROJECT_NAME} VERSION 0.1.0)
 
-# Default to C99
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 99)
-endif()
-
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 # find dependencies
@@ -36,19 +32,19 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
 )
 
-add_library(goto_plugins src/goto_plugin_speed.cpp src/goto_plugin_traj.cpp)
-target_include_directories(goto_plugins PUBLIC
+add_library(${PROJECT_NAME} src/goto_plugin_speed.cpp src/goto_plugin_traj.cpp)
+target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(
-  goto_plugins
+  ${PROJECT_NAME}
   ${PROJECT_DEPENDENCIES}
 )
 
 pluginlib_export_plugin_description_file(goto_plugin_base plugins.xml)
 
 install(
-  TARGETS goto_plugins
+  TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -56,7 +52,7 @@ install(
 )
 
 ament_export_libraries(
-  goto_plugins
+  ${PROJECT_NAME}
 )
 ament_export_targets(
   export_${PROJECT_NAME}

@@ -32,5 +32,10 @@
 *.app
 
 # IDEs
-.vscode
+.vscode/
 build/
+.cache/
+compile_commands.json
+
+
+
