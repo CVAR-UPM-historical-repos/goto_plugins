@@ -69,8 +69,7 @@ namespace goto_plugins
             static as2::motionReferenceHandlers::SpeedMotion motion_handler(node_ptr_);
 
             float desired_yaw = ignore_yaw_ ? getActualYaw() : 0.0;
-            RCLCPP_INFO(node_ptr_->get_logger(), "Desired yaw set to %f", desired_yaw);
-
+            
             // Check if goal is done
             while (!checkGoalCondition())
             {
@@ -88,11 +87,11 @@ namespace goto_plugins
                 Eigen::Vector3d speed_setpoint = (desired_position_ - actual_position_);
                 pose_mutex_.unlock();
 
-                float yaw = ignore_yaw_ ? 0.0 : -atan2f((double)speed_setpoint.x(), (double)speed_setpoint.y()) + M_PI / 2.0f;
+                float yaw = ignore_yaw_ ? 0.0 : getDesiredYawAngle(speed_setpoint);
                 motion_handler.sendSpeedCommandWithYawAngle(getValidSpeed(speed_setpoint.x()),
                                                             getValidSpeed(speed_setpoint.y()),
                                                             getValidSpeed(speed_setpoint.z()),
-                                                            getValidSpeed(yaw));
+                                                            yaw);
 
                 feedback->actual_distance_to_goal = actual_distance_to_goal_;
                 feedback->actual_speed = actual_speed_;
@@ -116,6 +115,13 @@ namespace goto_plugins
             pose_mutex_.unlock();
             Eigen::Vector3d orientation = rot_mat.eulerAngles(0, 1, 2);
             float yaw = orientation[2] + M_PI / 2.0f;
+            return yaw;
+        }
+
+        float getDesiredYawAngle(Eigen::Vector3d position_error)
+        {
+            float yaw = atan2f((double)position_error.y(), (double)position_error.x());
+            RCLCPP_INFO(node_ptr_->get_logger(), "Desired yaw set to %f", yaw);
             return yaw;
         }
 
