@@ -117,8 +117,9 @@ namespace goto_plugins
 
             result->goto_success = true;
             goal_handle->succeed(result);
-            // TODO: change this to hover
-            motion_handler__vel.sendSpeedCommandWithYawSpeed(0, 0, 0, 0);
+            // FIX ME: hover with speedCommand not working : segmentation fault
+
+            //motion_handler__vel.sendSpeedCommandWithYawSpeed(0, 0, 0, 0);
             return true;
         }
 
