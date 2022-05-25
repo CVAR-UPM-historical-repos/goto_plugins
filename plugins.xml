@@ -5,4 +5,7 @@
   <class type="goto_plugins::GotoTraj" base_class_type="goto_base::GotoBase">
     <description>Goto done with trajectory generator.</description>
   </class>
+  <class type="goto_plugins::GotoPosition" base_class_type="goto_base::GotoBase">
+    <description>Goto done with position commmands.</description>
+  </class>
 </library>
