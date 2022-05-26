@@ -121,7 +121,6 @@ namespace goto_plugins
         float getDesiredYawAngle(Eigen::Vector3d position_error)
         {
             float yaw = atan2f((double)position_error.y(), (double)position_error.x());
-            RCLCPP_INFO(node_ptr_->get_logger(), "Desired yaw set to %f", yaw);
             return yaw;
         }
 
