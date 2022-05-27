@@ -58,20 +58,8 @@ namespace goto_plugins
             switch (goal->yaw_mode_flag)
             {
             case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
-            {
-                tf2::Quaternion q(
-                    goal->target_pose.orientation.x,
-                    goal->target_pose.orientation.y,
-                    goal->target_pose.orientation.z,
-                    goal->target_pose.orientation.w);
-                    
-                tf2::Matrix3x3 m(q);
-
-                double roll, pitch, yaw;
-                m.getRPY(roll, pitch, yaw);
-                
-                yaw_goal_ = yaw;
-                // yaw_goal_ = quaternion2Euler(goal->target_pose.orientation)[2] + M_PI / 2.0f;
+            { 
+                yaw_goal_ = as2::FrameUtils::getYawFromQuaternion(goal->target_pose.orientation);
                 break;
             } 
             case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
@@ -79,7 +67,7 @@ namespace goto_plugins
                 break;
             case as2_msgs::action::GoToWaypoint::Goal::PATH_FACING:
                 Eigen::Vector3d actual_position = getActualPosition();
-                yaw_goal_ = computeFacingAngle(actual_position,desired_position_);
+                yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
                 break;
             return rclcpp_action::GoalResponse::REJECT;
             }
@@ -103,8 +91,6 @@ namespace goto_plugins
 
             as2::motionReferenceHandlers::PositionMotion motion_handler(node_ptr_);
             as2::motionReferenceHandlers::SpeedMotion motion_handler__vel(node_ptr_); 
-
-            
 
             // Check if goal is done
             while (!checkGoalCondition())
@@ -138,27 +124,6 @@ namespace goto_plugins
         }
 
     private:
-        float getActualYaw()
-        {
-            pose_mutex_.lock();
-            tf2::Matrix3x3 m(actual_q_);
-            pose_mutex_.unlock();
-
-            double roll, pitch, yaw;
-            m.getRPY(roll, pitch, yaw);
-
-            return yaw;
-        }
-
-        bool checkGoalCondition()
-        {
-            if (distance_measured_)
-            {
-                if (fabs(actual_distance_to_goal_) < goal_threshold_)
-                    return true;
-            }
-            return false;
-        }
 
         float getValidSpeed(float speed)
         {
@@ -176,25 +141,15 @@ namespace goto_plugins
             pose_mutex_.lock();
 
             return position;
-
-        }
-
-        Eigen::Vector3d quaternion2Euler(geometry_msgs::msg::Quaternion quat)
-        {
-            Eigen::Quaterniond quaternion;
-            quaternion.x() = quat.x;
-            quaternion.y() = quat.y;
-            quaternion.z() = quat.z;
-            quaternion.w() = quat.w;
-            Eigen::Vector3d euler = quaternion.toRotationMatrix().eulerAngles(0,1,2);
-
-            return euler;
-
         }
 
         double computeFacingAngle(Eigen::Vector3d fromPoint, Eigen::Vector3d toPoint){
             Eigen::Vector3d diff = toPoint - fromPoint;
-            return atan2f(diff[1], diff[0]);
+            if (diff.head(2).norm() < 2.0f)
+            {
+                return getActualYaw();
+            }
+            return as2::FrameUtils::getVector2DAngle(diff[0], diff[1]);
         }
     }; // GotoPosition class
 } // goto_plugins namespace

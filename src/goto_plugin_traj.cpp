@@ -84,17 +84,7 @@ namespace goto_plugins
             // TODO: change this to hover
             return true;
         }
-
-    private:
-        bool checkGoalCondition()
-        {
-            if (distance_measured_)
-            {
-                if (fabs(actual_distance_to_goal_) < goal_threshold_)
-                    return true;
-            }
-            return false;
-        }
+        
     }; // GotoTraj class
 } // goto_plugins namespace
 

@@ -68,7 +68,7 @@ namespace goto_plugins
 
             static as2::motionReferenceHandlers::SpeedMotion motion_handler(node_ptr_);
 
-            float desired_yaw = ignore_yaw_ ? getActualYaw() : 0.0;
+            float desired_yaw = getActualYaw();
             
             // Check if goal is done
             while (!checkGoalCondition())
@@ -79,7 +79,7 @@ namespace goto_plugins
                     goal_handle->canceled(result);
                     RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
                     // TODO: change this to hover
-                    motion_handler.sendSpeedCommandWithYawSpeed(0, 0, 0, 0);
+                    motion_handler.sendSpeedCommandWithYawAngle(0, 0, 0, desired_yaw);
                     return false;
                 }
 
@@ -87,11 +87,25 @@ namespace goto_plugins
                 Eigen::Vector3d speed_setpoint = (desired_position_ - actual_position_);
                 pose_mutex_.unlock();
 
-                float yaw = ignore_yaw_ ? 0.0 : getDesiredYawAngle(speed_setpoint);
+                desired_yaw = ignore_yaw_ ? getActualYaw() : getDesiredYawAngle(speed_setpoint);
+
+                if (ignore_yaw_)
+                {
+                    desired_yaw = getActualYaw();
+                }
+                else if (!ignore_yaw_ && speed_setpoint.head(2).norm() < 2.0f)
+                {
+                    desired_yaw = getActualYaw();
+                }
+                else
+                {
+                    desired_yaw = getDesiredYawAngle(speed_setpoint);
+                }
+
                 motion_handler.sendSpeedCommandWithYawAngle(getValidSpeed(speed_setpoint.x()),
                                                             getValidSpeed(speed_setpoint.y()),
                                                             getValidSpeed(speed_setpoint.z()),
-                                                            yaw);
+                                                            desired_yaw);
 
                 feedback->actual_distance_to_goal = actual_distance_to_goal_;
                 feedback->actual_speed = actual_speed_;
@@ -103,37 +117,16 @@ namespace goto_plugins
             result->goto_success = true;
             goal_handle->succeed(result);
             // TODO: change this to hover
-            motion_handler.sendSpeedCommandWithYawSpeed(0, 0, 0, 0);
+            motion_handler.sendSpeedCommandWithYawAngle(0, 0, 0, desired_yaw);
             return true;
         }
 
     private:
-        float getActualYaw()
-        {
-            pose_mutex_.lock();
-            tf2::Matrix3x3 m(actual_q_);
-            pose_mutex_.unlock();
-
-            double roll, pitch, yaw;
-            m.getRPY(roll, pitch, yaw);
-
-            return yaw;
-        }
 
         float getDesiredYawAngle(Eigen::Vector3d position_error)
         {
             float yaw = atan2f((double)position_error.y(), (double)position_error.x());
             return yaw;
-        }
-
-        bool checkGoalCondition()
-        {
-            if (distance_measured_)
-            {
-                if (fabs(actual_distance_to_goal_) < goal_threshold_)
-                    return true;
-            }
-            return false;
         }
 
         float getValidSpeed(float speed)
