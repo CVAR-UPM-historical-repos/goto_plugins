@@ -58,8 +58,22 @@ namespace goto_plugins
             switch (goal->yaw_mode_flag)
             {
             case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
-                yaw_goal_ = quaternion2Euler(goal->target_pose.orientation)[2] + M_PI / 2.0f;
+            {
+                tf2::Quaternion q(
+                    goal->target_pose.orientation.x,
+                    goal->target_pose.orientation.y,
+                    goal->target_pose.orientation.z,
+                    goal->target_pose.orientation.w);
+                    
+                tf2::Matrix3x3 m(q);
+
+                double roll, pitch, yaw;
+                m.getRPY(roll, pitch, yaw);
+                
+                yaw_goal_ = yaw;
+                // yaw_goal_ = quaternion2Euler(goal->target_pose.orientation)[2] + M_PI / 2.0f;
                 break;
+            } 
             case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
                 yaw_goal_ = getActualYaw();
                 break;
@@ -127,10 +141,12 @@ namespace goto_plugins
         float getActualYaw()
         {
             pose_mutex_.lock();
-            Eigen::Matrix3d rot_mat = actual_q_.toRotationMatrix();
+            tf2::Matrix3x3 m(actual_q_);
             pose_mutex_.unlock();
-            Eigen::Vector3d orientation = rot_mat.eulerAngles(0, 1, 2);
-            float yaw = orientation[2] + M_PI / 2.0f;
+
+            double roll, pitch, yaw;
+            m.getRPY(roll, pitch, yaw);
+
             return yaw;
         }
 
