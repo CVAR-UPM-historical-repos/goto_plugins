@@ -71,6 +71,16 @@ namespace goto_plugins
                 break;
             return rclcpp_action::GoalResponse::REJECT;
             }
+
+            // TODO: Use the yaw_mode_flag to set the yaw_goal_ when Python Interface supports it
+            if (!ignore_yaw_)
+            {
+                RCLCPP_INFO(node_ptr_->get_logger(),"Path facing: %f",yaw_goal_);
+                Eigen::Vector3d actual_position = getActualPosition();
+                RCLCPP_INFO(node_ptr_->get_logger(),"Get actual position");
+                yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
+            }
+
             RCLCPP_INFO(node_ptr_->get_logger(),"Goal Angle set to: %f",yaw_goal_);
 
             distance_measured_ = false;
@@ -138,8 +148,7 @@ namespace goto_plugins
         {
             pose_mutex_.lock();
             Eigen::Vector3d position = actual_position_;
-            pose_mutex_.lock();
-
+            pose_mutex_.unlock();
             return position;
         }
 
