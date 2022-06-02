@@ -38,9 +38,9 @@
 #include "motion_reference_handlers/position_motion.hpp"
 #include "motion_reference_handlers/speed_motion.hpp"
 
-namespace goto_plugins
+namespace goto_plugin_position
 {
-    class GotoPosition : public goto_base::GotoBase
+    class Plugin : public goto_base::GotoBase
     {
     private:
         float yaw_goal_;
@@ -151,9 +151,9 @@ namespace goto_plugins
             }
             return as2::FrameUtils::getVector2DAngle(diff[0], diff[1]);
         }
-    }; // GotoPosition class
-} // goto_plugins namespace
+    }; // Plugin class
+} // goto_plugin_position namespace
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(goto_plugins::GotoPosition, goto_base::GotoBase)
+PLUGINLIB_EXPORT_CLASS(goto_plugin_position::Plugin, goto_base::GotoBase)

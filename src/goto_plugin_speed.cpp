@@ -37,9 +37,9 @@
 #include "goto_base.hpp"
 #include "motion_reference_handlers/speed_motion.hpp"
 
-namespace goto_plugins
+namespace goto_plugin_speed
 {
-    class GotoSpeed : public goto_base::GotoBase
+    class Plugin : public goto_base::GotoBase
     {
     public:
         rclcpp_action::GoalResponse onAccepted(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override
@@ -139,9 +139,9 @@ namespace goto_plugins
         }
 
     private:
-    }; // GotoSpeed class
-} // goto_plugins namespace
+    }; // Plugin class
+} // goto_plugin_speed namespace
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(goto_plugins::GotoSpeed, goto_base::GotoBase)
+PLUGINLIB_EXPORT_CLASS(goto_plugin_speed::Plugin, goto_base::GotoBase)

@@ -6,9 +6,9 @@
 
 #include "as2_core/synchronous_service_client.hpp"
 
-namespace goto_plugins
+namespace goto_plugin_traj
 {
-    class GotoTraj : public goto_base::GotoBase
+    class Plugin : public goto_base::GotoBase
     {
         using YAW_MODE = as2_msgs::msg::TrajectoryWaypointsWithID;
         using SyncSetSpeed = as2::SynchronousServiceClient<as2_msgs::srv::SetSpeed>;
@@ -85,9 +85,9 @@ namespace goto_plugins
             return true;
         }
         
-    }; // GotoTraj class
-} // goto_plugins namespace
+    }; // Plugin class
+} // goto_plugin_traj namespace
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(goto_plugins::GotoTraj, goto_base::GotoBase)
+PLUGINLIB_EXPORT_CLASS(goto_plugin_traj::Plugin, goto_base::GotoBase)
