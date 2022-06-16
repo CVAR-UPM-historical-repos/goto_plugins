@@ -11,7 +11,7 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
@@ -20,7 +20,7 @@
  * 3. Neither the name of the copyright holder nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -35,8 +35,8 @@
  ********************************************************************************/
 
 #include "goto_base.hpp"
+#include "motion_reference_handlers/hover_motion.hpp"
 #include "motion_reference_handlers/position_motion.hpp"
-#include "motion_reference_handlers/speed_motion.hpp"
 
 namespace goto_plugin_position
 {
@@ -44,6 +44,7 @@ namespace goto_plugin_position
     {
     private:
         float yaw_goal_;
+
     public:
         rclcpp_action::GoalResponse onAccepted(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override
         {
@@ -58,10 +59,10 @@ namespace goto_plugin_position
             switch (goal->yaw_mode_flag)
             {
             case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
-            { 
+            {
                 yaw_goal_ = as2::FrameUtils::getYawFromQuaternion(goal->target_pose.orientation);
                 break;
-            } 
+            }
             case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
                 yaw_goal_ = getActualYaw();
                 break;
@@ -69,19 +70,19 @@ namespace goto_plugin_position
                 Eigen::Vector3d actual_position = getActualPosition();
                 yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
                 break;
-            return rclcpp_action::GoalResponse::REJECT;
+                return rclcpp_action::GoalResponse::REJECT;
             }
 
             // TODO: Use the yaw_mode_flag to set the yaw_goal_ when Python Interface supports it
             if (!ignore_yaw_)
             {
-                RCLCPP_INFO(node_ptr_->get_logger(),"Path facing: %f",yaw_goal_);
+                RCLCPP_INFO(node_ptr_->get_logger(), "Path facing: %f", yaw_goal_);
                 Eigen::Vector3d actual_position = getActualPosition();
-                RCLCPP_INFO(node_ptr_->get_logger(),"Get actual position");
+                RCLCPP_INFO(node_ptr_->get_logger(), "Get actual position");
                 yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
             }
 
-            RCLCPP_INFO(node_ptr_->get_logger(),"Goal Angle set to: %f",yaw_goal_);
+            RCLCPP_INFO(node_ptr_->get_logger(), "Goal Angle set to: %f", yaw_goal_);
 
             distance_measured_ = false;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -99,22 +100,21 @@ namespace goto_plugin_position
             auto feedback = std::make_shared<as2_msgs::action::GoToWaypoint::Feedback>();
             auto result = std::make_shared<as2_msgs::action::GoToWaypoint::Result>();
 
-            as2::motionReferenceHandlers::PositionMotion motion_handler(node_ptr_);
-            as2::motionReferenceHandlers::SpeedMotion motion_handler__vel(node_ptr_); 
+            static as2::motionReferenceHandlers::PositionMotion motion_handler(node_ptr_);
+            static as2::motionReferenceHandlers::HoverMotion motion_handler_hover(node_ptr_);
 
             // Check if goal is done
             while (!checkGoalCondition())
             {
                 // TODO: Send only once not in the loop.
-                motion_handler.sendPositionCommandWithYawAngle(desired_position_[0],desired_position_[1],desired_position_[2],yaw_goal_,desired_speed_,desired_speed_,desired_speed_);
+                motion_handler.sendPositionCommandWithYawAngle(desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, desired_speed_, desired_speed_, desired_speed_);
                 if (goal_handle->is_canceling())
                 {
-                    
+
                     result->goto_success = false;
                     goal_handle->canceled(result);
                     RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
-                    // TODO: change this to hover
-                    motion_handler__vel.sendSpeedCommandWithYawSpeed(0, 0, 0, 0);
+                    motion_handler_hover.sendHover();
                     return false;
                 }
 
@@ -127,14 +127,13 @@ namespace goto_plugin_position
 
             result->goto_success = true;
             goal_handle->succeed(result);
-            // FIX ME: hover with speedCommand not working : segmentation fault
-
-            //motion_handler__vel.sendSpeedCommandWithYawSpeed(0, 0, 0, 0);
+            RCLCPP_INFO(node_ptr_->get_logger(), "Goal succeeded");
+            // TODO: change this to hover?
+            motion_handler.sendPositionCommandWithYawAngle(desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, desired_speed_, desired_speed_, desired_speed_);
             return true;
         }
 
     private:
-
         float getValidSpeed(float speed)
         {
             if (std::abs(speed) > desired_speed_)
@@ -152,7 +151,8 @@ namespace goto_plugin_position
             return position;
         }
 
-        double computeFacingAngle(Eigen::Vector3d fromPoint, Eigen::Vector3d toPoint){
+        double computeFacingAngle(Eigen::Vector3d fromPoint, Eigen::Vector3d toPoint)
+        {
             Eigen::Vector3d diff = toPoint - fromPoint;
             if (diff.head(2).norm() < 2.0f)
             {

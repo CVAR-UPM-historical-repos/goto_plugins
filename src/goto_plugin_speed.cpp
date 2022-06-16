@@ -11,7 +11,7 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
@@ -20,7 +20,7 @@
  * 3. Neither the name of the copyright holder nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -35,6 +35,7 @@
  ********************************************************************************/
 
 #include "goto_base.hpp"
+#include "motion_reference_handlers/hover_motion.hpp"
 #include "motion_reference_handlers/speed_motion.hpp"
 
 namespace goto_plugin_speed
@@ -67,9 +68,10 @@ namespace goto_plugin_speed
             auto result = std::make_shared<as2_msgs::action::GoToWaypoint::Result>();
 
             static as2::motionReferenceHandlers::SpeedMotion motion_handler(node_ptr_);
+            static as2::motionReferenceHandlers::HoverMotion motion_handler_hover(node_ptr_);
 
             float desired_yaw = getActualYaw();
-            
+
             // Check if goal is done
             while (!checkGoalCondition())
             {
@@ -78,8 +80,7 @@ namespace goto_plugin_speed
                     result->goto_success = false;
                     goal_handle->canceled(result);
                     RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
-                    // TODO: change this to hover
-                    motion_handler.sendSpeedCommandWithYawAngle(0, 0, 0, desired_yaw);
+                    motion_handler_hover.sendHover();
                     return false;
                 }
 
@@ -116,13 +117,11 @@ namespace goto_plugin_speed
 
             result->goto_success = true;
             goal_handle->succeed(result);
-            // TODO: change this to hover
-            motion_handler.sendSpeedCommandWithYawAngle(0, 0, 0, desired_yaw);
+            motion_handler_hover.sendHover();
             return true;
         }
 
     private:
-
         float getDesiredYawAngle(Eigen::Vector3d position_error)
         {
             float yaw = atan2f((double)position_error.y(), (double)position_error.x());
