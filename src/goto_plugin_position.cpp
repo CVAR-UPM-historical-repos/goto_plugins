@@ -49,6 +49,7 @@ namespace goto_plugin_position
         rclcpp_action::GoalResponse onAccepted(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override
         {
             desired_position_ = Eigen::Vector3d(goal->target_pose.position.x, goal->target_pose.position.y, goal->target_pose.position.z);
+            RCLCPP_INFO(node_ptr_->get_logger(), "Go to position: [%f,%f,%f]", desired_position_.x(), desired_position_.y(), desired_position_.z());
             if (goal->max_speed != 0.0f)
             {
                 desired_speed_ = goal->max_speed;
@@ -142,7 +143,7 @@ namespace goto_plugin_position
             }
             return speed;
         }
-
+        
         Eigen::Vector3d getActualPosition()
         {
             pose_mutex_.lock();

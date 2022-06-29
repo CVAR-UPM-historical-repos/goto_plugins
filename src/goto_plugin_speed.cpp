@@ -42,7 +42,25 @@ namespace goto_plugin_speed
 {
     class Plugin : public goto_base::GotoBase
     {
+    private:
+        bool proportional_speed_limit_ = false;
+    
     public:
+        void ownInit()
+        {
+            try
+            {
+                // this->declare_parameter<bool>("goto_proportional_speed_limit");
+                node_ptr_->declare_parameter("goto_proportional_speed_limit"); // TODO: Fix for ROS2 Galactic
+                proportional_speed_limit_ = node_ptr_->get_parameter("goto_proportional_speed_limit").as_bool();
+            }
+            catch(const rclcpp::ParameterTypeException& e)
+            {
+                RCLCPP_ERROR(node_ptr_->get_logger(), "Launch argument <goto_proportional_speed_limit> not defined or malformed: %s", e.what());
+                // this->~Plugin();
+            }
+        }
+
         rclcpp_action::GoalResponse onAccepted(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override
         {
             desired_position_ = Eigen::Vector3d(goal->target_pose.position.x, goal->target_pose.position.y, goal->target_pose.position.z);
@@ -52,6 +70,7 @@ namespace goto_plugin_speed
             }
             ignore_yaw_ = goal->ignore_pose_yaw;
             distance_measured_ = false;
+
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         }
 
@@ -103,9 +122,31 @@ namespace goto_plugin_speed
                     desired_yaw = getDesiredYawAngle(speed_setpoint);
                 }
 
-                motion_handler.sendSpeedCommandWithYawAngle(getValidSpeed(speed_setpoint.x()),
-                                                            getValidSpeed(speed_setpoint.y()),
-                                                            getValidSpeed(speed_setpoint.z()),
+                Eigen::Vector3d speed(speed_setpoint.x(), speed_setpoint.y(), speed_setpoint.z());
+
+                // Delimit the speed for each axis
+                if (proportional_speed_limit_)
+                {
+                    for (short j = 0; j < 3; j++)
+                    {
+                        if (desired_speed_ == 0.0f || speed[j] == 0.0) {continue;};
+
+                        if (speed[j] > desired_speed_ || speed[j] < -desired_speed_)
+                        {
+                            speed *= std::abs(desired_speed_ / speed[j]);
+                        }
+                    }
+                }
+                else
+                {
+                    speed.x() = getValidSpeed(speed.x());
+                    speed.y() = getValidSpeed(speed.y());
+                    speed.z() = getValidSpeed(speed.z());
+                }
+
+                motion_handler.sendSpeedCommandWithYawAngle(speed.x(),
+                                                            speed.y(),
+                                                            speed.z(),
                                                             desired_yaw);
 
                 feedback->actual_distance_to_goal = actual_distance_to_goal_;
