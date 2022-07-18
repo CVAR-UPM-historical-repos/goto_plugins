@@ -50,8 +50,7 @@ namespace goto_plugin_speed
         {
             try
             {
-                // this->declare_parameter<bool>("goto_proportional_speed_limit");
-                node_ptr_->declare_parameter("goto_proportional_speed_limit"); // TODO: Fix for ROS2 Galactic
+                node_ptr_->declare_parameter<bool>("goto_proportional_speed_limit");
                 proportional_speed_limit_ = node_ptr_->get_parameter("goto_proportional_speed_limit").as_bool();
             }
             catch(const rclcpp::ParameterTypeException& e)
