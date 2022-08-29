@@ -56,7 +56,6 @@ namespace goto_plugin_speed
             catch(const rclcpp::ParameterTypeException& e)
             {
                 RCLCPP_ERROR(node_ptr_->get_logger(), "Launch argument <goto_proportional_speed_limit> not defined or malformed: %s", e.what());
-                // this->~Plugin();
             }
         }
 
@@ -148,9 +147,9 @@ namespace goto_plugin_speed
                                                             speed.z(),
                                                             desired_yaw);
 
-                feedback->actual_distance_to_goal = actual_distance_to_goal_;
-                feedback->actual_speed = actual_speed_;
-                goal_handle->publish_feedback(feedback);
+                // feedback->actual_distance_to_goal = actual_distance_to_goal_;
+                // feedback->actual_speed = actual_speed_;
+                // goal_handle->publish_feedback(feedback);
 
                 loop_rate.sleep();
             }

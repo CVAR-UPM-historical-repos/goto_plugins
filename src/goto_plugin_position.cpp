@@ -119,9 +119,9 @@ namespace goto_plugin_position
                     return false;
                 }
 
-                feedback->actual_distance_to_goal = actual_distance_to_goal_;
-                feedback->actual_speed = actual_speed_;
-                goal_handle->publish_feedback(feedback);
+                // feedback->actual_distance_to_goal = actual_distance_to_goal_;
+                // feedback->actual_speed = actual_speed_;
+                // goal_handle->publish_feedback(feedback);
 
                 loop_rate.sleep();
             }
