@@ -107,7 +107,7 @@ namespace goto_plugin_speed
                 pose_mutex_.unlock();
 
                 desired_yaw = ignore_yaw_ ? getActualYaw() : getDesiredYawAngle(speed_setpoint);
-
+                /*
                 if (ignore_yaw_)
                 {
                     desired_yaw = getActualYaw();
@@ -120,7 +120,8 @@ namespace goto_plugin_speed
                 {
                     desired_yaw = getDesiredYawAngle(speed_setpoint);
                 }
-
+                */
+                desired_yaw_ = desired_yaw;
                 Eigen::Vector3d speed(speed_setpoint.x(), speed_setpoint.y(), speed_setpoint.z());
 
                 // Delimit the speed for each axis
