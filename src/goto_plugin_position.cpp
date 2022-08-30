@@ -60,10 +60,8 @@ namespace goto_plugin_position
             switch (goal->yaw_mode_flag)
             {
             case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
-            {
                 yaw_goal_ = as2::FrameUtils::getYawFromQuaternion(goal->target_pose.orientation);
                 break;
-            }
             case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
                 yaw_goal_ = getActualYaw();
                 break;
@@ -71,7 +69,7 @@ namespace goto_plugin_position
                 Eigen::Vector3d actual_position = getActualPosition();
                 yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
                 break;
-                return rclcpp_action::GoalResponse::REJECT;
+            return rclcpp_action::GoalResponse::REJECT;
             }
 
             // TODO: Use the yaw_mode_flag to set the yaw_goal_ when Python Interface supports it
@@ -143,7 +141,7 @@ namespace goto_plugin_position
             }
             return speed;
         }
-        
+
         Eigen::Vector3d getActualPosition()
         {
             pose_mutex_.lock();

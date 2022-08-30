@@ -106,7 +106,23 @@ namespace goto_plugin_speed
                 Eigen::Vector3d speed_setpoint = (desired_position_ - actual_position_);
                 pose_mutex_.unlock();
 
-                desired_yaw = ignore_yaw_ ? getActualYaw() : getDesiredYawAngle(speed_setpoint);
+                switch (goal->yaw_mode_flag)
+                {
+                case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
+                    desired_yaw = as2::FrameUtils::getYawFromQuaternion(goal->target_pose.orientation);
+                    break;
+                case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
+                    desired_yaw = getActualYaw();
+                    break;
+                case as2_msgs::action::GoToWaypoint::Goal::PATH_FACING:
+                    desired_yaw = getDesiredYawAngle(speed_setpoint);
+                    break;
+                default:
+                    desired_yaw = getActualYaw();
+                    RCLCPP_WARN_ONCE(node_ptr_->get_logger(), "Unsupported YAW mode");
+                }
+
+                //desired_yaw = ignore_yaw_ ? getActualYaw() : getDesiredYawAngle(speed_setpoint);
                 /*
                 if (ignore_yaw_)
                 {
@@ -121,10 +137,10 @@ namespace goto_plugin_speed
                     desired_yaw = getDesiredYawAngle(speed_setpoint);
                 }
                 */
-                
-                if(ignore_yaw_ || speed_setpoint.head(2).norm() > 0.1f)
+
+                if (ignore_yaw_ || goal->yaw_mode_flag == as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW ||speed_setpoint.head(2).norm() > 0.1f)
                     desired_yaw_ = desired_yaw;
-                    
+
                 Eigen::Vector3d speed(speed_setpoint.x(), speed_setpoint.y(), speed_setpoint.z());
 
                 // Delimit the speed for each axis
