@@ -44,7 +44,7 @@ namespace goto_plugin_speed
     {
     private:
         bool proportional_speed_limit_ = false;
-    
+
     public:
         void ownInit()
         {
@@ -53,7 +53,7 @@ namespace goto_plugin_speed
                 node_ptr_->declare_parameter<bool>("goto_proportional_speed_limit");
                 proportional_speed_limit_ = node_ptr_->get_parameter("goto_proportional_speed_limit").as_bool();
             }
-            catch(const rclcpp::ParameterTypeException& e)
+            catch (const rclcpp::ParameterTypeException &e)
             {
                 RCLCPP_ERROR(node_ptr_->get_logger(), "Launch argument <goto_proportional_speed_limit> not defined or malformed: %s", e.what());
                 // this->~Plugin();
@@ -121,7 +121,10 @@ namespace goto_plugin_speed
                     desired_yaw = getDesiredYawAngle(speed_setpoint);
                 }
                 */
-                desired_yaw_ = desired_yaw;
+                
+                if(ignore_yaw_ || speed_setpoint.head(2).norm() > 0.1f)
+                    desired_yaw_ = desired_yaw;
+                    
                 Eigen::Vector3d speed(speed_setpoint.x(), speed_setpoint.y(), speed_setpoint.z());
 
                 // Delimit the speed for each axis
@@ -129,7 +132,10 @@ namespace goto_plugin_speed
                 {
                     for (short j = 0; j < 3; j++)
                     {
-                        if (desired_speed_ == 0.0f || speed[j] == 0.0) {continue;};
+                        if (desired_speed_ == 0.0f || speed[j] == 0.0)
+                        {
+                            continue;
+                        };
 
                         if (speed[j] > desired_speed_ || speed[j] < -desired_speed_)
                         {
