@@ -122,25 +122,13 @@ namespace goto_plugin_speed
                     RCLCPP_WARN_ONCE(node_ptr_->get_logger(), "Unsupported YAW mode");
                 }
 
-                //desired_yaw = ignore_yaw_ ? getActualYaw() : getDesiredYawAngle(speed_setpoint);
-                /*
-                if (ignore_yaw_)
+                if (goal->yaw_mode_flag == as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW || 
+                    goal->yaw_mode_flag == as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW ||
+                    speed_setpoint.head(2).norm() > 0.1f)
                 {
-                    desired_yaw = getActualYaw();
-                }
-                else if (!ignore_yaw_ && speed_setpoint.head(2).norm() < 2.0f)
-                {
-                    desired_yaw = getActualYaw();
-                }
-                else
-                {
-                    desired_yaw = getDesiredYawAngle(speed_setpoint);
-                }
-                */
-
-                if (ignore_yaw_ || goal->yaw_mode_flag == as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW ||speed_setpoint.head(2).norm() > 0.1f)
                     desired_yaw_ = desired_yaw;
-
+                }    
+                    
                 Eigen::Vector3d speed(speed_setpoint.x(), speed_setpoint.y(), speed_setpoint.z());
 
                 // Delimit the speed for each axis
