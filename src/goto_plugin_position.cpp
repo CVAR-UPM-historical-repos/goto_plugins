@@ -61,7 +61,7 @@ namespace goto_plugin_position
             {
             case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
             {
-                yaw_goal_ = as2::FrameUtils::getYawFromQuaternion(goal->target_pose.orientation);
+                yaw_goal_ = as2::frame::getYawFromQuaternion(goal->target_pose.orientation);
                 break;
             }
             case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
@@ -159,7 +159,7 @@ namespace goto_plugin_position
             {
                 return getActualYaw();
             }
-            return as2::FrameUtils::getVector2DAngle(diff[0], diff[1]);
+            return as2::frame::getVector2DAngle(diff[0], diff[1]);
         }
     }; // Plugin class
 } // goto_plugin_position namespace
