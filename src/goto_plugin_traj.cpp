@@ -28,7 +28,7 @@ namespace goto_plugin_traj
             req_speed.speed.speed = desired_speed_;
 
             auto set_traj_speed_cli = SyncSetSpeed(as2_names::services::motion_reference::set_traj_speed,
-                node_ptr_->as2_node_shared_from_this());
+                node_ptr_);
             if (!set_traj_speed_cli.sendRequest(req_speed, resp_speed, 1))
             {
                 return rclcpp_action::GoalResponse::REJECT;
@@ -43,7 +43,7 @@ namespace goto_plugin_traj
             req_traj.waypoints.yaw_mode = goal->ignore_pose_yaw ? YAW_MODE::KEEP_YAW : YAW_MODE::PATH_FACING;
 
             auto send_traj_wayp_cli = SyncSendTrajWayp(as2_names::services::motion_reference::send_traj_wayp,
-                node_ptr_->as2_node_shared_from_this());
+                node_ptr_);
             if (!send_traj_wayp_cli.sendRequest(req_traj, resp_traj, 1))
             {
                 return rclcpp_action::GoalResponse::REJECT;

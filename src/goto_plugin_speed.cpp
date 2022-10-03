@@ -89,6 +89,9 @@ namespace goto_plugin_speed
             static as2::motionReferenceHandlers::HoverMotion motion_handler_hover(node_ptr_);
 
             float desired_yaw = getActualYaw();
+            
+            std::string frame_id_speed = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_pose_);
+            std::string frame_id_yaw = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_twist_);
 
             // Check if goal is done
             while (!checkGoalCondition())
@@ -143,9 +146,11 @@ namespace goto_plugin_speed
                     speed.z() = getValidSpeed(speed.z());
                 }
 
-                motion_handler.sendSpeedCommandWithYawAngle(speed.x(),
+                motion_handler.sendSpeedCommandWithYawAngle(frame_id_speed,
+                                                            speed.x(),
                                                             speed.y(),
                                                             speed.z(),
+                                                            frame_id_yaw,
                                                             desired_yaw);
 
                 feedback->actual_distance_to_goal = actual_distance_to_goal_;

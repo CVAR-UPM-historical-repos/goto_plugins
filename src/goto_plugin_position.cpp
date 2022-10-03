@@ -104,11 +104,14 @@ namespace goto_plugin_position
             static as2::motionReferenceHandlers::PositionMotion motion_handler(node_ptr_);
             static as2::motionReferenceHandlers::HoverMotion motion_handler_hover(node_ptr_);
 
+            std::string frame_id_pose = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_pose_);
+            std::string frame_id_twist = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_twist_);
+
             // Check if goal is done
             while (!checkGoalCondition())
             {
                 // TODO: Send only once not in the loop.
-                motion_handler.sendPositionCommandWithYawAngle(desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, desired_speed_, desired_speed_, desired_speed_);
+                motion_handler.sendPositionCommandWithYawAngle(frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
                 if (goal_handle->is_canceling())
                 {
 
@@ -130,7 +133,7 @@ namespace goto_plugin_position
             goal_handle->succeed(result);
             RCLCPP_INFO(node_ptr_->get_logger(), "Goal succeeded");
             // TODO: change this to hover?
-            motion_handler.sendPositionCommandWithYawAngle(desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, desired_speed_, desired_speed_, desired_speed_);
+            motion_handler.sendPositionCommandWithYawAngle(frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
             return true;
         }
 
