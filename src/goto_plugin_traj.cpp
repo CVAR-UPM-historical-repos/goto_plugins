@@ -64,6 +64,21 @@ namespace goto_plugin_traj
             auto result = std::make_shared<as2_msgs::action::GoToWaypoint::Result>();
 
             rclcpp::Rate loop_rate(10);
+
+            while (!distance_measured_)
+            {
+                if (goal_handle->is_canceling())
+                {
+                    result->goto_success = false;
+                    goal_handle->canceled(result);
+                    RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
+                    return false;
+                }
+                loop_rate.sleep();
+                auto &clk = *node_ptr_->get_clock();
+                RCLCPP_INFO_THROTTLE(node_ptr_->get_logger(), clk, 5000, "Waiting for odometry");
+            }
+            
             while (!checkGoalCondition())
             {
                 if (goal_handle->is_canceling())
