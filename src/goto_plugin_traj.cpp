@@ -75,7 +75,8 @@ namespace goto_plugin_traj
                     return false;
                 }
                 loop_rate.sleep();
-                RCLCPP_INFO(node_ptr_->get_logger(), "Waiting for odometry...");
+                auto &clk = *node_ptr_->get_clock();
+                RCLCPP_INFO_THROTTLE(node_ptr_->get_logger(), clk, 5000, "Waiting for odometry");
             }
             
             while (!checkGoalCondition())
