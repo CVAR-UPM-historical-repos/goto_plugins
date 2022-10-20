@@ -107,6 +107,19 @@ namespace goto_plugin_position
             std::string frame_id_pose = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_pose_);
             std::string frame_id_twist = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_twist_);
 
+            while (!distance_measured_)
+            {
+                if (goal_handle->is_canceling())
+                {
+                    result->goto_success = false;
+                    goal_handle->canceled(result);
+                    RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
+                    return false;
+                }
+                loop_rate.sleep();
+                RCLCPP_INFO(node_ptr_->get_logger(), "Waiting for odometry...");
+            }
+
             // Check if goal is done
             while (!checkGoalCondition())
             {
