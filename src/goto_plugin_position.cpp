@@ -38,148 +38,138 @@
 #include "motion_reference_handlers/hover_motion.hpp"
 #include "motion_reference_handlers/position_motion.hpp"
 
-namespace goto_plugin_position
-{
-    class Plugin : public goto_base::GotoBase
-    {
-    private:
-        float yaw_goal_;
+namespace goto_plugin_position {
+class Plugin : public goto_base::GotoBase {
+private:
+  float yaw_goal_;
 
-    public:
-        rclcpp_action::GoalResponse onAccepted(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override
-        {
-            desired_position_ = Eigen::Vector3d(goal->target_pose.position.x, goal->target_pose.position.y, goal->target_pose.position.z);
-            RCLCPP_INFO(node_ptr_->get_logger(), "Go to position: [%f,%f,%f]", desired_position_.x(), desired_position_.y(), desired_position_.z());
-            if (goal->max_speed != 0.0f)
-            {
-                desired_speed_ = goal->max_speed;
-            }
-            ignore_yaw_ = goal->ignore_pose_yaw;
+public:
+  rclcpp_action::GoalResponse onAccepted(
+      const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override {
+    desired_position_ = Eigen::Vector3d(goal->target_pose.position.x, goal->target_pose.position.y,
+                                        goal->target_pose.position.z);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Go to position: [%f,%f,%f]", desired_position_.x(),
+                desired_position_.y(), desired_position_.z());
+    if (goal->max_speed != 0.0f) {
+      desired_speed_ = goal->max_speed;
+    }
+    ignore_yaw_ = goal->ignore_pose_yaw;
 
-            // Calculate angle
-            switch (goal->yaw_mode_flag)
-            {
-            case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
-            {
-                yaw_goal_ = as2::frame::getYawFromQuaternion(goal->target_pose.orientation);
-                break;
-            }
-            case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
-                yaw_goal_ = getActualYaw();
-                break;
-            case as2_msgs::action::GoToWaypoint::Goal::PATH_FACING:
-                Eigen::Vector3d actual_position = getActualPosition();
-                yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
-                break;
-                return rclcpp_action::GoalResponse::REJECT;
-            }
+    // Calculate angle
+    switch (goal->yaw_mode_flag) {
+      case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW: {
+        yaw_goal_ = as2::frame::getYawFromQuaternion(goal->target_pose.orientation);
+        break;
+      }
+      case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
+        yaw_goal_ = getActualYaw();
+        break;
+      case as2_msgs::action::GoToWaypoint::Goal::PATH_FACING:
+        Eigen::Vector3d actual_position = getActualPosition();
+        yaw_goal_                       = computeFacingAngle(actual_position, desired_position_);
+        break;
+        return rclcpp_action::GoalResponse::REJECT;
+    }
 
-            // TODO: Use the yaw_mode_flag to set the yaw_goal_ when Python Interface supports it
-            if (!ignore_yaw_)
-            {
-                RCLCPP_INFO(node_ptr_->get_logger(), "Path facing: %f", yaw_goal_);
-                Eigen::Vector3d actual_position = getActualPosition();
-                RCLCPP_INFO(node_ptr_->get_logger(), "Get actual position");
-                yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
-            }
+    // TODO: Use the yaw_mode_flag to set the yaw_goal_ when Python Interface supports it
+    if (!ignore_yaw_) {
+      RCLCPP_INFO(node_ptr_->get_logger(), "Path facing: %f", yaw_goal_);
+      Eigen::Vector3d actual_position = getActualPosition();
+      RCLCPP_INFO(node_ptr_->get_logger(), "Get actual position");
+      yaw_goal_ = computeFacingAngle(actual_position, desired_position_);
+    }
 
-            RCLCPP_INFO(node_ptr_->get_logger(), "Goal Angle set to: %f", yaw_goal_);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goal Angle set to: %f", yaw_goal_);
 
-            distance_measured_ = false;
-            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-        }
+    distance_measured_ = false;
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+  }
 
-        rclcpp_action::CancelResponse onCancel(const std::shared_ptr<GoalHandleGoto> goal_handle) override
-        {
-            return rclcpp_action::CancelResponse::ACCEPT;
-        }
+  rclcpp_action::CancelResponse onCancel(
+      const std::shared_ptr<GoalHandleGoto> goal_handle) override {
+    return rclcpp_action::CancelResponse::ACCEPT;
+  }
 
-        bool onExecute(const std::shared_ptr<GoalHandleGoto> goal_handle) override
-        {
-            rclcpp::Rate loop_rate(10);
-            const auto goal = goal_handle->get_goal();
-            auto feedback = std::make_shared<as2_msgs::action::GoToWaypoint::Feedback>();
-            auto result = std::make_shared<as2_msgs::action::GoToWaypoint::Result>();
+  bool onExecute(const std::shared_ptr<GoalHandleGoto> goal_handle) override {
+    rclcpp::Rate loop_rate(10);
+    const auto goal = goal_handle->get_goal();
+    auto feedback   = std::make_shared<as2_msgs::action::GoToWaypoint::Feedback>();
+    auto result     = std::make_shared<as2_msgs::action::GoToWaypoint::Result>();
 
-            static as2::motionReferenceHandlers::PositionMotion motion_handler(node_ptr_);
-            static as2::motionReferenceHandlers::HoverMotion motion_handler_hover(node_ptr_);
+    static as2::motionReferenceHandlers::PositionMotion motion_handler(node_ptr_);
+    static as2::motionReferenceHandlers::HoverMotion motion_handler_hover(node_ptr_);
 
-            std::string frame_id_pose = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_pose_);
-            std::string frame_id_twist = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_twist_);
+    std::string frame_id_pose = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_pose_);
+    std::string frame_id_twist =
+        as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_twist_);
 
-            while (!distance_measured_)
-            {
-                if (goal_handle->is_canceling())
-                {
-                    result->goto_success = false;
-                    goal_handle->canceled(result);
-                    RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
-                    return false;
-                }
-                loop_rate.sleep();
-                auto &clk = *node_ptr_->get_clock();
-                RCLCPP_INFO_THROTTLE(node_ptr_->get_logger(), clk, 5000, "Waiting for odometry");
-            }
+    while (!distance_measured_) {
+      if (goal_handle->is_canceling()) {
+        result->goto_success = false;
+        goal_handle->canceled(result);
+        RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
+        return false;
+      }
+      loop_rate.sleep();
+      auto &clk = *node_ptr_->get_clock();
+      RCLCPP_INFO_THROTTLE(node_ptr_->get_logger(), clk, 5000, "Waiting for odometry");
+    }
 
-            // Check if goal is done
-            while (!checkGoalCondition())
-            {
-                // TODO: Send only once not in the loop.
-                motion_handler.sendPositionCommandWithYawAngle(frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
-                if (goal_handle->is_canceling())
-                {
+    // Check if goal is done
+    while (!checkGoalCondition()) {
+      // TODO: Send only once not in the loop.
+      motion_handler.sendPositionCommandWithYawAngle(
+          frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2],
+          yaw_goal_, frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
+      if (goal_handle->is_canceling()) {
+        result->goto_success = false;
+        goal_handle->canceled(result);
+        RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
+        motion_handler_hover.sendHover();
+        return false;
+      }
 
-                    result->goto_success = false;
-                    goal_handle->canceled(result);
-                    RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
-                    motion_handler_hover.sendHover();
-                    return false;
-                }
+      feedback->actual_distance_to_goal = actual_distance_to_goal_;
+      feedback->actual_speed            = actual_speed_;
+      goal_handle->publish_feedback(feedback);
 
-                feedback->actual_distance_to_goal = actual_distance_to_goal_;
-                feedback->actual_speed = actual_speed_;
-                goal_handle->publish_feedback(feedback);
+      loop_rate.sleep();
+    }
 
-                loop_rate.sleep();
-            }
+    result->goto_success = true;
+    goal_handle->succeed(result);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goal succeeded");
+    // TODO: change this to hover?
+    motion_handler.sendPositionCommandWithYawAngle(
+        frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_,
+        frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
+    return true;
+  }
 
-            result->goto_success = true;
-            goal_handle->succeed(result);
-            RCLCPP_INFO(node_ptr_->get_logger(), "Goal succeeded");
-            // TODO: change this to hover?
-            motion_handler.sendPositionCommandWithYawAngle(frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_, frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
-            return true;
-        }
+private:
+  float getValidSpeed(float speed) {
+    if (std::abs(speed) > desired_speed_) {
+      return (speed < 0.0) ? -desired_speed_ : desired_speed_;
+    }
+    return speed;
+  }
 
-    private:
-        float getValidSpeed(float speed)
-        {
-            if (std::abs(speed) > desired_speed_)
-            {
-                return (speed < 0.0) ? -desired_speed_ : desired_speed_;
-            }
-            return speed;
-        }
-        
-        Eigen::Vector3d getActualPosition()
-        {
-            pose_mutex_.lock();
-            Eigen::Vector3d position = actual_position_;
-            pose_mutex_.unlock();
-            return position;
-        }
+  Eigen::Vector3d getActualPosition() {
+    pose_mutex_.lock();
+    Eigen::Vector3d position = actual_position_;
+    pose_mutex_.unlock();
+    return position;
+  }
 
-        double computeFacingAngle(Eigen::Vector3d fromPoint, Eigen::Vector3d toPoint)
-        {
-            Eigen::Vector3d diff = toPoint - fromPoint;
-            if (diff.head(2).norm() < 2.0f)
-            {
-                return getActualYaw();
-            }
-            return as2::frame::getVector2DAngle(diff[0], diff[1]);
-        }
-    }; // Plugin class
-} // goto_plugin_position namespace
+  double computeFacingAngle(Eigen::Vector3d fromPoint, Eigen::Vector3d toPoint) {
+    Eigen::Vector3d diff = toPoint - fromPoint;
+    if (diff.head(2).norm() < 2.0f) {
+      return getActualYaw();
+    }
+    return as2::frame::getVector2DAngle(diff[0], diff[1]);
+  }
+};  // Plugin class
+}  // namespace goto_plugin_position
 
 #include <pluginlib/class_list_macros.hpp>
 
