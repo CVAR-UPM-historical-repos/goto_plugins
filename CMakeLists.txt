@@ -21,6 +21,7 @@ set(PROJECT_DEPENDENCIES
   geometry_msgs
   motion_reference_handlers
   Eigen3
+  as2_behavior
 )
 
 foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
@@ -38,8 +39,6 @@ include_directories(
 
 set(SOURCE_CPP_FILES
   src/goto_plugin_position.cpp
-  src/goto_plugin_speed.cpp
-  src/goto_plugin_traj.cpp
 )
 
 add_library(${PROJECT_NAME} ${SOURCE_CPP_FILES})

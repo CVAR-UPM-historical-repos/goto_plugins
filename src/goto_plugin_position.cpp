@@ -1,6 +1,6 @@
 /*!*******************************************************************************************
- *  \file       goto_plugin_speed.cpp
- *  \brief      This file contains the implementation of the go to Behaviour speed plugin
+ *  \file       goto_plugin_position.cpp
+ *  \brief      This file contains the implementation of the go to Behaviour position plugin
  *  \authors    Miguel Fernández Cortizas
  *              Pedro Arias Pérez
  *              David Pérez Saura
@@ -34,6 +34,7 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ********************************************************************************/
 
+#include "as2_behavior/behavior_server.hpp"
 #include "goto_base.hpp"
 #include "motion_reference_handlers/hover_motion.hpp"
 #include "motion_reference_handlers/position_motion.hpp"
@@ -41,15 +42,25 @@
 namespace goto_plugin_position {
 class Plugin : public goto_base::GotoBase {
 private:
-  float yaw_goal_;
+  bool on_pause_ = true;
+
+  double yaw_goal_ = 0.0;
+
+  std::shared_ptr<as2::motionReferenceHandlers::PositionMotion> position_motion_handler_ = nullptr;
+  std::shared_ptr<as2::motionReferenceHandlers::HoverMotion> hover_motion_handler_       = nullptr;
 
 public:
-  rclcpp_action::GoalResponse onAccepted(
-      const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override {
+  void ownInit() {
+    position_motion_handler_ =
+        std::make_shared<as2::motionReferenceHandlers::PositionMotion>(node_ptr_);
+    hover_motion_handler_ = std::make_shared<as2::motionReferenceHandlers::HoverMotion>(node_ptr_);
+  }
+
+  bool goalProcessing(std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) {
     desired_position_ = Eigen::Vector3d(goal->target_pose.position.x, goal->target_pose.position.y,
                                         goal->target_pose.position.z);
-    RCLCPP_INFO(node_ptr_->get_logger(), "Go to position: [%f,%f,%f]", desired_position_.x(),
-                desired_position_.y(), desired_position_.z());
+    RCLCPP_INFO(node_ptr_->get_logger(), "GOTO PLUGIN: process_goal: [%f,%f,%f]",
+                desired_position_.x(), desired_position_.y(), desired_position_.z());
     if (goal->max_speed != 0.0f) {
       desired_speed_ = goal->max_speed;
     }
@@ -57,21 +68,24 @@ public:
 
     // Calculate angle
     switch (goal->yaw_mode_flag) {
-      case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW: {
+      case as2_msgs::action::GoToWaypoint::Goal::FIXED_YAW:
         yaw_goal_ = as2::frame::getYawFromQuaternion(goal->target_pose.orientation);
         break;
-      }
       case as2_msgs::action::GoToWaypoint::Goal::KEEP_YAW:
         yaw_goal_ = getActualYaw();
         break;
-      case as2_msgs::action::GoToWaypoint::Goal::PATH_FACING:
+      case as2_msgs::action::GoToWaypoint::Goal::PATH_FACING: {
         Eigen::Vector3d actual_position = getActualPosition();
         yaw_goal_                       = computeFacingAngle(actual_position, desired_position_);
-        break;
-        return rclcpp_action::GoalResponse::REJECT;
+      } break;
+      default: {
+        RCLCPP_ERROR(node_ptr_->get_logger(), "GOTO PLUGIN: Unknown yaw mode flag");
+        return false;
+      }
     }
 
-    // TODO: Use the yaw_mode_flag to set the yaw_goal_ when Python Interface supports it
+    // TODO: Use the yaw_mode_flag to set the yaw_goal_ when Python Interface
+    // supports it
     if (!ignore_yaw_) {
       RCLCPP_INFO(node_ptr_->get_logger(), "Path facing: %f", yaw_goal_);
       Eigen::Vector3d actual_position = getActualPosition();
@@ -82,68 +96,65 @@ public:
     RCLCPP_INFO(node_ptr_->get_logger(), "Goal Angle set to: %f", yaw_goal_);
 
     distance_measured_ = false;
-    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-  }
-
-  rclcpp_action::CancelResponse onCancel(
-      const std::shared_ptr<GoalHandleGoto> goal_handle) override {
-    return rclcpp_action::CancelResponse::ACCEPT;
-  }
-
-  bool onExecute(const std::shared_ptr<GoalHandleGoto> goal_handle) override {
-    rclcpp::Rate loop_rate(10);
-    const auto goal = goal_handle->get_goal();
-    auto feedback   = std::make_shared<as2_msgs::action::GoToWaypoint::Feedback>();
-    auto result     = std::make_shared<as2_msgs::action::GoToWaypoint::Result>();
-
-    static as2::motionReferenceHandlers::PositionMotion motion_handler(node_ptr_);
-    static as2::motionReferenceHandlers::HoverMotion motion_handler_hover(node_ptr_);
-
-    std::string frame_id_pose = as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_pose_);
-    std::string frame_id_twist =
-        as2::tf::generateTfName(node_ptr_->get_namespace(), frame_id_twist_);
-
-    while (!distance_measured_) {
-      if (goal_handle->is_canceling()) {
-        result->goto_success = false;
-        goal_handle->canceled(result);
-        RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
-        return false;
-      }
-      loop_rate.sleep();
-      auto &clk = *node_ptr_->get_clock();
-      RCLCPP_INFO_THROTTLE(node_ptr_->get_logger(), clk, 5000, "Waiting for odometry");
-    }
-
-    // Check if goal is done
-    while (!checkGoalCondition()) {
-      // TODO: Send only once not in the loop.
-      motion_handler.sendPositionCommandWithYawAngle(
-          frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2],
-          yaw_goal_, frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
-      if (goal_handle->is_canceling()) {
-        result->goto_success = false;
-        goal_handle->canceled(result);
-        RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
-        motion_handler_hover.sendHover();
-        return false;
-      }
-
-      feedback->actual_distance_to_goal = actual_distance_to_goal_;
-      feedback->actual_speed            = actual_speed_;
-      goal_handle->publish_feedback(feedback);
-
-      loop_rate.sleep();
-    }
-
-    result->goto_success = true;
-    goal_handle->succeed(result);
-    RCLCPP_INFO(node_ptr_->get_logger(), "Goal succeeded");
-    // TODO: change this to hover?
-    motion_handler.sendPositionCommandWithYawAngle(
-        frame_id_pose, desired_position_[0], desired_position_[1], desired_position_[2], yaw_goal_,
-        frame_id_twist, desired_speed_, desired_speed_, desired_speed_);
     return true;
+  }
+
+  bool on_activate(const std::shared_ptr<const as2_msgs::action::GoToWaypoint_Goal> goal) override {
+    return goalProcessing(goal);
+  }
+
+  bool on_modify(const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override {
+    return goalProcessing(goal);
+  }
+
+  bool on_deactivate(const std::shared_ptr<std::string> &message) override {
+    RCLCPP_WARN(node_ptr_->get_logger(), "Goal canceled");
+    return true;
+  }
+
+  bool on_pause(const std::shared_ptr<std::string> &message) {
+    RCLCPP_WARN(node_ptr_->get_logger(), "Goto paused");
+    hover_motion_handler_->sendHover();
+    return true;
+  }
+
+  bool on_resume(const std::shared_ptr<std::string> &message) {
+    RCLCPP_WARN(node_ptr_->get_logger(), "Goto resumed");
+    hover_motion_handler_->sendHover();
+    distance_measured_ = false;
+    return true;
+  }
+
+  as2_behavior::ExecutionStatus on_run(
+      const std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal,
+      std::shared_ptr<as2_msgs::action::GoToWaypoint::Feedback> &feedback_msg,
+      std::shared_ptr<as2_msgs::action::GoToWaypoint::Result> &result_ms) override {
+    if (!distance_measured_) {
+      return as2_behavior::ExecutionStatus::RUNNING;
+    }
+
+    if (!position_motion_handler_->sendPositionCommandWithYawAngle(
+            frame_id_pose_, desired_position_[0], desired_position_[1], desired_position_[2],
+            yaw_goal_, frame_id_twist_, desired_speed_, desired_speed_, desired_speed_)) {
+      RCLCPP_ERROR(node_ptr_->get_logger(), "GOTO PLUGIN: Error sending position command");
+      return as2_behavior::ExecutionStatus::FAILURE;
+    }
+
+    if (checkGoalCondition()) {
+      result_ms->goto_success = true;
+      RCLCPP_INFO(node_ptr_->get_logger(), "Goal succeeded");
+      return as2_behavior::ExecutionStatus::SUCCESS;
+    }
+
+    feedback_msg->actual_distance_to_goal = actual_distance_to_goal_;
+    feedback_msg->actual_speed            = actual_speed_;
+    return as2_behavior::ExecutionStatus::RUNNING;
+  }
+
+  void on_excution_end(const as2_behavior::ExecutionStatus &state) {
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto end");
+    hover_motion_handler_->sendHover();
+    return;
   }
 
 private:
