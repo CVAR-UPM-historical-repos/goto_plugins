@@ -62,12 +62,11 @@ public:
 
   bool on_resume(const std::shared_ptr<std::string> &message) {
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto resumed");
-    sendHover();
     return true;
   }
 
   bool own_activate(std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override {
-    RCLCPP_INFO(node_ptr_->get_logger(), "Goal accepted");
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto goal accepted");
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to position: %f, %f, %f", goal->target_pose.point.x,
                 goal->target_pose.point.y, goal->target_pose.point.z);
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to speed: %f", goal->max_speed);
@@ -76,32 +75,43 @@ public:
   }
 
   bool own_modify(std::shared_ptr<const as2_msgs::action::GoToWaypoint::Goal> goal) override {
-    RCLCPP_INFO(node_ptr_->get_logger(), "Goal modified");
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto goal modified");
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to position: %f, %f, %f", goal->target_pose.point.x,
                 goal->target_pose.point.y, goal->target_pose.point.z);
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to speed: %f", goal->max_speed);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto to angle: %f", goal->yaw_angle);
     return true;
   }
 
   as2_behavior::ExecutionStatus own_run() override {
-    if (!position_motion_handler_->sendPositionCommandWithYawAngle(
-            "earth", goal_.target_pose.point.x, goal_.target_pose.point.y,
-            goal_.target_pose.point.z, goal_.yaw_angle, "earth", goal_.max_speed, goal_.max_speed,
-            goal_.max_speed)) {
-      RCLCPP_ERROR(node_ptr_->get_logger(), "GOTO PLUGIN: Error sending position command");
-      return as2_behavior::ExecutionStatus::FAILURE;
-    }
-
     if (checkGoalCondition()) {
       result_.goto_success = true;
       RCLCPP_INFO(node_ptr_->get_logger(), "Goal succeeded");
       return as2_behavior::ExecutionStatus::SUCCESS;
     }
+
+    if (!position_motion_handler_->sendPositionCommandWithYawAngle(
+            "earth", goal_.target_pose.point.x, goal_.target_pose.point.y,
+            goal_.target_pose.point.z, goal_.yaw_angle, "earth", goal_.max_speed, goal_.max_speed,
+            goal_.max_speed)) {
+      RCLCPP_ERROR(node_ptr_->get_logger(), "GOTO PLUGIN: Error sending position command");
+      result_.goto_success = false;
+      return as2_behavior::ExecutionStatus::FAILURE;
+    }
+
     return as2_behavior::ExecutionStatus::RUNNING;
   }
 
   void own_execution_end(const as2_behavior::ExecutionStatus &state) {
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto end");
+    if (state == as2_behavior::ExecutionStatus::SUCCESS) {
+      // Leave the drone in the last position
+      if (position_motion_handler_->sendPositionCommandWithYawAngle(
+              "earth", goal_.target_pose.point.x, goal_.target_pose.point.y,
+              goal_.target_pose.point.z, goal_.yaw_angle, "earth", goal_.max_speed, goal_.max_speed,
+              goal_.max_speed))
+        return;
+    }
     sendHover();
     return;
   }
