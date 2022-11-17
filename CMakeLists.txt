@@ -12,15 +12,14 @@ set(PROJECT_DEPENDENCIES
   ament_cmake
   ament_cmake_ros
   pluginlib
-  goto_plugin_base
-  rclcpp
   rclcpp_action
-  nav_msgs
   as2_core
   as2_msgs
-  geometry_msgs
+  as2_behavior
+  goto_plugin_base
   motion_reference_handlers
   Eigen3
+  geometry_msgs
 )
 
 foreach(DEPENDENCY ${PROJECT_DEPENDENCIES})
@@ -34,12 +33,11 @@ set(HEADER_HPP_FILES
 include_directories(
   include
   include/${PROJECT_NAME}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 set(SOURCE_CPP_FILES
   src/goto_plugin_position.cpp
-  src/goto_plugin_speed.cpp
-  src/goto_plugin_traj.cpp
 )
 
 add_library(${PROJECT_NAME} ${SOURCE_CPP_FILES})
