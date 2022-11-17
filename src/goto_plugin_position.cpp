@@ -1,6 +1,6 @@
 /*!*******************************************************************************************
  *  \file       goto_plugin_position.cpp
- *  \brief      This file contains the implementation of the go to Behaviour position plugin
+ *  \brief      This file contains the implementation of the go to behaviour position plugin
  *  \authors    Miguel Fernández Cortizas
  *              Pedro Arias Pérez
  *              David Pérez Saura
@@ -34,7 +34,6 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ********************************************************************************/
 
-#include "as2_behavior/behavior_server.hpp"
 #include "goto_base.hpp"
 #include "motion_reference_handlers/position_motion.hpp"
 
