@@ -69,7 +69,7 @@ public:
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to position: %f, %f, %f", goal->target_pose.point.x,
                 goal->target_pose.point.y, goal->target_pose.point.z);
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to speed: %f", goal->max_speed);
-    RCLCPP_INFO(node_ptr_->get_logger(), "Goto to angle: %f", goal->yaw_angle);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto to angle: %f", goal->yaw.angle);
     return true;
   }
 
@@ -78,7 +78,7 @@ public:
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to position: %f, %f, %f", goal->target_pose.point.x,
                 goal->target_pose.point.y, goal->target_pose.point.z);
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto to speed: %f", goal->max_speed);
-    RCLCPP_INFO(node_ptr_->get_logger(), "Goto to angle: %f", goal->yaw_angle);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto to angle: %f", goal->yaw.angle);
     return true;
   }
 
@@ -91,7 +91,7 @@ public:
 
     if (!position_motion_handler_->sendPositionCommandWithYawAngle(
             "earth", goal_.target_pose.point.x, goal_.target_pose.point.y,
-            goal_.target_pose.point.z, goal_.yaw_angle, "earth", goal_.max_speed, goal_.max_speed,
+            goal_.target_pose.point.z, goal_.yaw.angle, "earth", goal_.max_speed, goal_.max_speed,
             goal_.max_speed)) {
       RCLCPP_ERROR(node_ptr_->get_logger(), "GOTO PLUGIN: Error sending position command");
       result_.goto_success = false;
@@ -107,7 +107,7 @@ public:
       // Leave the drone in the last position
       if (position_motion_handler_->sendPositionCommandWithYawAngle(
               "earth", goal_.target_pose.point.x, goal_.target_pose.point.y,
-              goal_.target_pose.point.z, goal_.yaw_angle, "earth", goal_.max_speed, goal_.max_speed,
+              goal_.target_pose.point.z, goal_.yaw.angle, "earth", goal_.max_speed, goal_.max_speed,
               goal_.max_speed))
         return;
     }
