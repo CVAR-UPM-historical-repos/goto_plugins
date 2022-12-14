@@ -49,7 +49,7 @@ public:
   }
 
   bool own_activate(as2_msgs::action::GoToWaypoint::Goal &_goal) override {
-    if (!computeYaw(_goal.yaw, _goal.target_pose.point, _goal.target_pose.point, _goal.yaw.angle)) {
+    if (!computeYaw(_goal.yaw.mode, _goal.target_pose.point, _goal.target_pose.point, _goal.yaw.angle)) {
       return false;
     }
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto goal accepted");
@@ -61,7 +61,7 @@ public:
   }
 
   bool own_modify(as2_msgs::action::GoToWaypoint::Goal &_goal) override {
-    if (!computeYaw(_goal.yaw, _goal.target_pose.point, _goal.target_pose.point, _goal.yaw.angle)) {
+    if (!computeYaw(_goal.yaw.mode, _goal.target_pose.point, _goal.target_pose.point, _goal.yaw.angle)) {
       return false;
     }
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto goal modified");
@@ -133,11 +133,11 @@ private:
     return as2::frame::getYawFromQuaternion(actual_pose_.pose.orientation);
   };
 
-  bool computeYaw(const as2_msgs::msg::YawMode &yaw_mode,
+  bool computeYaw(const uint8_t yaw_mode,
                   const geometry_msgs::msg::Point &target,
                   const geometry_msgs::msg::Point &actual,
                   float &yaw) {
-    switch (yaw_mode.mode) {
+    switch (yaw_mode) {
       case as2_msgs::msg::YawMode::PATH_FACING: {
         Eigen::Vector2d diff(target.x - actual.x, target.y - actual.y);
         if (diff.norm() < 0.1) {

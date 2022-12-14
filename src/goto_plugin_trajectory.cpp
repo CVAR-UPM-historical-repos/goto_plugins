@@ -76,7 +76,7 @@ public:
                 traj_generator_goal.path[0].pose.position.x,
                 traj_generator_goal.path[0].pose.position.y,
                 traj_generator_goal.path[0].pose.position.z);
-    RCLCPP_INFO(node_ptr_->get_logger(), "Goto with angle: %f", traj_generator_goal.yaw.angle);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto with angle mode: %d", traj_generator_goal.yaw.mode);
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto with speed: %f", traj_generator_goal.max_speed);
 
     traj_gen_goal_handle_future_ =
@@ -99,7 +99,7 @@ public:
                 traj_generator_goal.path[0].pose.position.x,
                 traj_generator_goal.path[0].pose.position.y,
                 traj_generator_goal.path[0].pose.position.z);
-    RCLCPP_INFO(node_ptr_->get_logger(), "Goto with angle: %f", traj_generator_goal.yaw.angle);
+    RCLCPP_INFO(node_ptr_->get_logger(), "Goto with angle mode: %d", traj_generator_goal.yaw.mode);
     RCLCPP_INFO(node_ptr_->get_logger(), "Goto with speed: %f", traj_generator_goal.max_speed);
 
     // TODO: call trajectory generator modify service with new goal
